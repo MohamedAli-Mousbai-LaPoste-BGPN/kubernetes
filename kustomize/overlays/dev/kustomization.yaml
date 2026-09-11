@@ -1,0 +1,62 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: fil-rouge-dev
+nameSuffix: -dev
+
+resources:
+  - ../../base
+
+labels:
+  - includeSelectors: false
+    pairs:
+      env: dev
+
+replicas:
+  - name: notes-api
+    count: 1
+  - name: notes-web
+    count: 1
+
+configMapGenerator:
+  - name: notes-config
+    behavior: merge          # complète celle de la base
+    literals:
+      - APP_GREETING=Environnement de DEV
+      - APP_COLOR=#2f855a
+
+patches:
+  - target:
+      kind: Ingress
+      name: notes
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: dev.127.0.0.1.nip.io
+replacements:
+  # Nom réel du Service de la base -> DB_HOST de l'API
+  - source:
+      kind: Service
+      name: notes-db
+      fieldPath: metadata.name
+    targets:
+      - select:
+          kind: Deployment
+          name: notes-api
+        fieldPaths:
+          - spec.template.spec.containers.[name=api].env.[name=DB_HOST].value
+
+  # Nom réel du Service de l'API -> API_UPSTREAM du frontend ("<nom>:8000")
+  - source:
+      kind: Service
+      name: notes-api
+      fieldPath: metadata.name
+    targets:
+      - select:
+          kind: Deployment
+          name: notes-web
+        fieldPaths:
+          - spec.template.spec.containers.[name=web].env.[name=API_UPSTREAM].value
+        options:
+          delimiter: ':'      # on ne remplace que la partie avant ':'
+          index: 0            # "notes-api:8000" -> "notes-api-dev:8000"

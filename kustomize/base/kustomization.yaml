@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - notes-api-deploy.yaml
+  - notes-api-svc.yaml
+  - notes-web.yaml
+  - notes-db.yaml
+  - notes-ingress.yaml
+
+# 'labels' remplace 'commonLabels' (déprécié).
+# includeSelectors: false => on n'ajoute PAS ces labels aux selectors, qui sont
+# des champs immuables : les modifier casserait toute mise à jour ultérieure.
+labels:
+  - includeSelectors: false
+    pairs:
+      app.kubernetes.io/part-of: fil-rouge
+
+configMapGenerator:
+  - name: notes-config
+    literals:
+      - APP_GREETING=Bonjour
+      - APP_COLOR=#2b6cb0
+
+images:
+  - name: localhost:5001/notes-api
+    newTag: "1.0.0"
+  - name: localhost:5001/notes-web
+    newTag: "1.0.0"
