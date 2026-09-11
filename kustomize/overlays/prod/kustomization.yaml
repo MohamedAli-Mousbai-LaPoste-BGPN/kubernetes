@@ -27,7 +27,7 @@ configMapGenerator:
   - name: notes-config
     behavior: merge
     literals:
-      - APP_GREETING=Déployé par GitOps
+      - APP_GREETING=PRODUCTION
       - APP_COLOR=#c53030
 
 patches:
